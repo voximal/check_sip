@@ -1,5 +1,8 @@
 Change log
 
+v1.5
+  Remove Switch and utils.pm dependencies. For using anywhere elese than Nagios.
+
 v1.4
   Generate a unique branch tag in accordance with RFC3261. This allows
   PJSIP to repond to the correct port if there are multiple checks
