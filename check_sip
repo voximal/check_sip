@@ -28,17 +28,17 @@
 #   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 use strict;
-use lib "/usr/lib64/nagios/plugins";
-use utils qw($TIMEOUT %ERRORS &print_revision &support);
 use vars qw($PROGNAME);
 use IO::Socket::INET;
-#use Sys::Hostname;
 use Time::HiRes qw(gettimeofday ualarm);
 use Net::Domain qw (hostname hostfqdn hostdomain);
-use Switch;
+
+## common variables
+my $TIMEOUT = 15;
+my %ERRORS=('OK'=>0,'WARNING'=>1,'CRITICAL'=>2,'UNKNOWN'=>3,'DEPENDENT'=>4);
 
 $PROGNAME = "check_sip";
-my $VERSION  = "1.4.0";
+my $VERSION  = "1.5.0";
 
 $ENV{'BASH_ENV'}=''; 
 $ENV{'ENV'}='';
@@ -82,7 +82,7 @@ unless ($opt_p) { $opt_p = 5060 }
 unless ($opt_H) { $opt_H = hostFromURI($opt_u) }
 
 # Check the host is valid
-unless (utils::is_hostname($opt_H))
+unless (is_hostname($opt_H))
 {
   print "$opt_H is not a valid hostname\n";
   printHelp();
@@ -125,13 +125,19 @@ for($TIMEOUT=0,$resend_times=0,$max_resend=11;$resend_times<=$max_resend;){
 $socket->send($req);
 $response='';
 $resend_times++;
+
 # sip retransmission, totally 35.5 seconds.
-switch($resend_times){
-  case 1 { ualarm(500000); }
-  case 2 { $TIMEOUT=1; alarm($TIMEOUT); }
-  case 3 { $TIMEOUT=2; alarm($TIMEOUT); }
-  else { $TIMEOUT=4; alarm($TIMEOUT); }
+if      ( $resend_times == 1 ) {
+     ualarm(500000);
+} elsif ( $resend_times == 2 ) {
+     $TIMEOUT=1; alarm($TIMEOUT);
+} elsif ( $resend_times == 3 ) {
+     $TIMEOUT=2; alarm($TIMEOUT);
+} else {
+     $TIMEOUT=4; alarm($TIMEOUT);
 }
+
+
 #print $resend_times."->".$Total_timeout." $TIMEOUT\n";
 $socket->recv($response, 1024) or $state = 'CRITICAL'; # TODO: CHECK and show '503 Service Unavailable' when receiving unreachable ICMP packet.
 #get rid of the 100 Trying - provisional response ...
@@ -153,6 +159,22 @@ else { $state = 'CRITICAL' }
 exit $ERRORS{$state};
 
 ### Subroutines ##############################################################
+
+sub is_hostname {
+	my $host1 = shift;
+	return 0 unless defined $host1;
+	if ($host1 =~ m/^[\d\.]+$/ && $host1 !~ /\.$/) {
+		if ($host1 =~ m/^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$/) {
+			return 1;
+		} else {
+			return 0;
+		}
+	} elsif ($host1 =~ m/^[a-zA-Z0-9][-a-zA-Z0-9]*(\.[a-zA-Z0-9][-a-zA-Z0-9]*)*\.?$/) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
 
 
 sub uconnect
