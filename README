@@ -14,9 +14,8 @@ Comments, bug reports etc are welcome.
 
 Pre-Requisites
 --------------
-
-- Working Nagios install
-- Perl 5 (tested with Perl 5.6.1 and 5.8)
+- Perl 5 (tested with Perl 5.6.1 and 5.20)
+- Perl IO::Socket::INET, Time::HiRes, Net::Domain
 
 Installation
 ------------
